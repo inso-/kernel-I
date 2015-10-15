@@ -1,0 +1,32 @@
+0 download kernel
+
+wget https://www.kernel.org/pub/linux/kernel/v4.x/linux-4.2.3.tar.xz
+
+1 change syscall_X.tbl
+
+/Users/inso/Study/kernel/linux-4.2.3/arch/x86/entry/syscalls/syscall_64.tbl
+/Users/inso/Study/kernel/linux-4.2.3/arch/x86/entry/syscalls/syscall_32.tbl
+
+2 code syscall
+
+3 add makefile to syscall
+
+obj-y := kuptime.o
+
+4 add our syscall in makefile of kernel
+
+core-y          += kernel/ mm/ fs/ ipc/ security/ crypto/ block/ kuptime/
+
+5 add our syscall folder in root of kernel
+
+
+6 compile kernel
+
+sudo apt-get install git fakeroot build-essential ncurses-dev xz-utils
+sudo apt-get install kernel-package
+
+cp /boot/config-$(uname -r) .config
+make menuconfig
+make-kpkg clean
+fakeroot make-kpkg --initrd --revision=1.0.NAS kernel_image kernel_headers
+
