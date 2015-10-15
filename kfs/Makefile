@@ -15,4 +15,6 @@ clean:
 boot: kernel.elf
 	$(QEMU) -fda kernel.elf
 
-debug:
+debug: src/main.o src/crt0.o
+	$(CC) -o kernel.elf src/main.o src/crt0.o $(LDFLAGS) -g
+	$(QEMU) -fda kernel.elf -S
