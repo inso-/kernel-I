@@ -7,14 +7,24 @@
 #include <linux/major.h> 
 #include <linux/capability.h> 
 #include <asm/uaccess.h> 
-#include <linux/miscdevice.h> 
+#include <linux/miscdevice.h>
+#include <linux/unistd.h>
+#include <linux/syscalls.h>
+#include <linux/utsname.h>
+#include <linux/string.h>
+#include "version.h"
+
+MODULE_LICENSE("GPL");
+MODULE_AUTHOR("THOMAS MOUSSAJEE");
+MODULE_DESCRIPTION("KERNEL VERSION DEVICE");
 
 static struct file_operations fops =
   {
   read: device_read,
   write: device_write,
   open: device_open,
-  release: device_release, 
+  release: device_release,
+  
   };
 
 static struct miscdevice misc_dev = 
@@ -25,13 +35,46 @@ static struct miscdevice misc_dev =
     .mode = S_IRWXUGO, 
   };
 
+static char used = 0;
+static char trust = 0;
+static char message[BUF_LEN] = {0};
+static char *msg_ptr;
+
+static int get_version(void)
+{
+  struct new_utsname *info;
+
+  info = utsname();
+  if (!info)
+    return -1;
+  
+  sprintf(message, "%s\n", info->release);
+  trust = 1;
+
+  return 0;
+}
+
+static void clean_message(void)
+{
+  memset(message, 0, BUF_LEN);
+  trust = 0;
+}  
+
 int init_module(void)
 {
   int ret = 0;
   
+  ret = get_version();
+  if (ret) {
+    printk("Unable get kernel version\n");
+    return ret;
+  }
+  
+  printk(KERN_ALERT "module init \n");
   ret = misc_register(&misc_dev);
   if (ret)
     printk("Unable to register misc dev\n");
+
   return ret;
 }
 
@@ -40,14 +83,17 @@ void cleanup_module(void)
   misc_deregister(&misc_dev);
 }
 
-static int device_open(struct inode *, struct file *)
+/* 
+ * Called when a process open the device file.
+ */
+static int device_open(struct inode *sinode, struct file *sfile)
 {
-  if (Device_Open)
+  if (used)
     return -EBUSY;
 
-  Device_Open++;
-  sprintf(msg, "I already told you %d times Hello world!\n", counter++);
-  msg_Ptr = msg;
+  used++;
+  msg_ptr = message;
+  printk("device opened\n");
   try_module_get(THIS_MODULE);
 
   return SUCCESS;
@@ -58,14 +104,10 @@ static int device_open(struct inode *, struct file *)
  */
 static int device_release(struct inode *inode, struct file *file)
 {
-  Device_Open--;/* We're now ready for our next caller */
-
-  /* 
-   * Decrement the usage count, or else once you opened the file, you'll
-   * never get get rid of the module. 
-   */
+  used--;
+  printk("device closed\n");
   module_put(THIS_MODULE);
-
+  
   return 0;
 }
 
@@ -75,47 +117,32 @@ static int device_release(struct inode *inode, struct file *file)
  */
 static ssize_t device_read(struct file * file, char __user * buf, size_t count, loff_t *ppos)
 {
-  /*
-   * Number of bytes actually written to the buffer 
-   */
   int bytes_read = 0;
 
-  /*
-   * If we're at the end of the message, 
-   * return 0 signifying end of file 
-   */
-  /* if (*msg_Ptr == 0) */
-  /*   return 0; */
+  if (!(*msg_ptr))
+    return 0;
 
-  /* /\*  */
-  /*  * Actually put the data into the buffer  */
-  /*  *\/ */
-  /* while (length && *msg_Ptr) { */
+  while (count && *msg_ptr)  {
+    put_user(*(msg_ptr++), buf++);
+    count--;
+    bytes_read++;
+  }
 
-  /*   /\*  */
-  /*    * The buffer is in the user data segment, not the kernel  */
-  /*    * segment so "*" assignment won't work.  We have to use  */
-  /*    * put_user which copies data from the kernel data segment to */
-  /*    * the user data segment.  */
-  /*    *\/ */
-  /*   put_user(*(msg_Ptr++), buffer++); */
-
-  /*   length--; */
-  /*   bytes_read++; */
-  /* } */
-
-  /* /\*  */
-  /*  * Most read functions return the number of bytes put into the buffer */
-  /*  *\/ */
   return bytes_read;
 }
 
 /*  
- * Called when a process writes to dev file: echo "hi" > /dev/hello 
+ * Called when a process writes to dev file: echo "hi" > /dev/version 
  */
-static ssize_t
-device_write(struct file *filp, const char *buff, size_t len, loff_t * off)
+static ssize_t device_write(struct file *filp, const char *buff, size_t len, loff_t *off)
 {
-  printk(KERN_ALERT "Sorry, this operation isn't supported.\n");
-  return -EINVAL;
+  int i;
+
+  clean_message();
+  for (i = 0; i < len && i < BUF_LEN; i++)
+    get_user(message[i], buff + i);
+  
+  msg_ptr = message;
+  
+  return i;
 }
