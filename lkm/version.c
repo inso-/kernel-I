@@ -20,11 +20,12 @@ MODULE_DESCRIPTION("KERNEL VERSION DEVICE");
 
 static struct file_operations fops =
   {
-  read: device_read,
-  write: device_write,
-  open: device_open,
-  release: device_release,
-  
+    .owner = THIS_MODULE,
+    .read = device_read,
+    .write = device_write,
+    .open = device_open,
+    .release = device_release,
+    .unlocked_ioctl = device_ioctl,
   };
 
 static struct miscdevice misc_dev = 
@@ -93,7 +94,6 @@ static int device_open(struct inode *sinode, struct file *sfile)
 
   used++;
   msg_ptr = message;
-  printk("device opened\n");
   try_module_get(THIS_MODULE);
 
   return SUCCESS;
@@ -131,8 +131,8 @@ static ssize_t device_read(struct file * file, char __user * buf, size_t count, 
   return bytes_read;
 }
 
-/*  
- * Called when a process writes to dev file: echo "hi" > /dev/version 
+/*
+ * Called when a process writes to dev file: echo "hi" > /dev/version
  */
 static ssize_t device_write(struct file *filp, const char *buff, size_t len, loff_t *off)
 {
@@ -145,4 +145,30 @@ static ssize_t device_write(struct file *filp, const char *buff, size_t len, lof
   msg_ptr = message;
   
   return i;
+}
+
+/*
+ * Called when a process use ioclt on dev file
+ */
+static long device_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
+{
+  int ret = 0;
+  
+  switch (cmd) {
+  case VERSION_MODIFIED:
+    {
+      if (!trust)
+	ret = 1;
+      break;
+    }
+  case VERSION_RESET:
+    {
+      clean_message();
+      get_version();
+      break;
+    }
+  default:
+    ret = -EINVAL; 
+  }
+  return ret;
 }
