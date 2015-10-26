@@ -1,7 +1,8 @@
-CFLAGS += -nostdinc -fno-builtin #-m32
+CFLAGS += -nostdinc -fno-builtin -m32
 CFLAGS += -fno-stack-protector
-LDFLAGS += -nostdlib -Wl,--build-id=none #-m32 
+LDFLAGS += -nostdlib -Wl,--build-id=none -m32
 CC = gcc $(CFLAGS)
+QEMU = qemu-system-x86_64
 
 kernel.elf: src/main.o src/crt0.o
 	$(CC) -o kernel.elf src/main.o src/crt0.o $(LDFLAGS)

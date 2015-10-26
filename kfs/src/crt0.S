@@ -9,7 +9,7 @@
 .section .text
 .global _start
 _start:
-	push ebx 	/* multiboot info */
-	push eax 	/* magic */
+	push %ebx 	/* multiboot info */
+	push %eax 	/* magic */
 	call main 	/* kernel entry point */
 	hlt
