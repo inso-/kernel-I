@@ -1,0 +1,64 @@
+From f098f040a384a4a5f850966c33daa2a91f627b2c Mon Sep 17 00:00:00 2001
+From: inso <thomas.moussajee@gmail.com>
+Date: Fri, 23 Oct 2015 01:56:33 -0700
+Subject: [PATCH] add syscall uptime
+
+Signed-off-by: inso <thomas.moussajee@gmail.com>
+---
+ arch/x86/entry/syscalls/syscall_64.tbl |  1 +
+ include/linux/syscalls.h               |  2 ++
+ kernel/sys.c                           | 18 ++++++++++++++++++
+ 3 files changed, 21 insertions(+)
+
+diff --git a/arch/x86/entry/syscalls/syscall_64.tbl b/arch/x86/entry/syscalls/syscall_64.tbl
+index 278842f..a240fdb 100644
+--- a/arch/x86/entry/syscalls/syscall_64.tbl
++++ b/arch/x86/entry/syscalls/syscall_64.tbl
+@@ -331,6 +331,7 @@
+ 322	64	execveat		stub_execveat
+ 323	common	userfaultfd		sys_userfaultfd
+ 324	common	membarrier		sys_membarrier
++325	common	uptime			sys_uptime
+ 
+ #
+ # x32-specific system call numbers start at 512 to avoid cache impact
+diff --git a/include/linux/syscalls.h b/include/linux/syscalls.h
+index a460e2e..1778607 100644
+--- a/include/linux/syscalls.h
++++ b/include/linux/syscalls.h
+@@ -887,4 +887,6 @@ asmlinkage long sys_execveat(int dfd, const char __user *filename,
+ 
+ asmlinkage long sys_membarrier(int cmd, int flags);
+ 
++asmlinkage time_t sys_uptime(time_t *t);
++
+ #endif
+diff --git a/kernel/sys.c b/kernel/sys.c
+index fa2f2f6..0e2fc19 100644
+--- a/kernel/sys.c
++++ b/kernel/sys.c
+@@ -2429,3 +2429,21 @@ COMPAT_SYSCALL_DEFINE1(sysinfo, struct compat_sysinfo __user *, info)
+ 	return 0;
+ }
+ #endif /* CONFIG_COMPAT */
++
++SYSCALL_DEFINE1(uptime, time_t*, t)
++{
++	struct sysinfo data;
++	int ret;
++	time_t time;
++
++	ret = do_sysinfo(&data);
++
++	if (!ret) {
++		time = data.uptime;
++		ret = copy_to_user(t, &time, sizeof(*t)) ? -EFAULT : 0;
++		}
++
++	if (ret)
++		time = ((time_t) -1);
++	return time;
++}
+-- 
+2.1.4
+
