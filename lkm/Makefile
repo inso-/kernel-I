@@ -2,6 +2,7 @@ ifeq ($(KERNELRELEASE),)
 
 #KERNELDIR ?= /home/amecareth/testlinux/
 KERNELDIR ?= /lib/modules/$(shell uname -r)/build
+
 PWD := $(shell pwd)
 NAME = version.ko
 TEST = test
@@ -28,7 +29,7 @@ unload:
 
 reload: unload load
 
-re:	unload clean fclean build load
+re:	clean fclean all
 
 remod:	unload clean fclean $(NAME) load
 
