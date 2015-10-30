@@ -2,7 +2,7 @@ CFLAGS += -nostdinc -fno-builtin -m32
 CFLAGS += -fno-stack-protector
 LDFLAGS += -nostdlib -Wl,--build-id=none -m32
 CC = gcc $(CFLAGS)
-QEMU = qemu-system-x86_64
+QEMU = qemu-system-i386
 
 kernel.elf: src/main.o src/crt0.o
 	$(CC) -o kernel.elf src/main.o src/crt0.o $(LDFLAGS)
@@ -13,8 +13,8 @@ clean:
 	rm -f src/*.o kernel.elf
 
 boot: kernel.elf
-	$(QEMU) -kernel kernel.elf -m 800
+	$(QEMU) -kernel kernel.elf -serial stdio -m 8000
 
 debug: src/main.o src/crt0.o
-	$(CC) -o kernel.elf src/main.o src/crt0.o $(LDFLAGS) -g
-	$(QEMU) -kernel kernel.elf -m 800 -S
+	$(CC) -o kernel.elf -g src/main.o src/crt0.o $(LDFLAGS)
+	$(QEMU) -kernel kernel.elf -m 800 -serial stdio -S

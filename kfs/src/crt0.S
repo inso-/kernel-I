@@ -1,5 +1,6 @@
 #define MAGIC 0x1badb002
 #define FLAGS 0x7
+
 .section .multiboot
 	.align 4
 	.long MAGIC
